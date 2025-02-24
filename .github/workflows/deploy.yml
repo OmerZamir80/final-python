@@ -1,0 +1,30 @@
+name: Deploy to EC2 with CodeDeploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Zip project files
+        run: zip -r deploy.zip . -x "*.git*"
+
+      - name: Upload to S3
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Upload to S3
+        run: aws s3 cp deploy.zip s3://codedeploy-final-proj/deploy.zip
+
+      - name: Deploy with CodeDeploy
+        run: aws deploy create-deployment --application-name final-proj-app --deployment-group-name final-proj-delpoyment --s3-location bucket=codedeploy-final-proj,key=deploy.zip,bundleType=zip
